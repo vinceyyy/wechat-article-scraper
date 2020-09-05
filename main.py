@@ -1,22 +1,27 @@
 """
-A scraper for WeChat offical account articles' titles, views, likes, # of comments, and real urls, and also look for certain elements in html.
+A scraper for WeChat offical account articles' titles, views, likes, # of comments, and real urls, and also looking for certain elements (target_html) in html.
 
 POST HTTP request to WeChat API http://mp.weixin.qq.com/mp/getappmsgext to get response.
-Requires a file named "config.json" to store sensitive information.
+Requires a file named "wechat.json" to store sensitive information.
 
 JSON file structure: 
 {
-    "history_url": ******,
+    "article_history": ******,
+
     "appmsg_token": ******,
 
     "__biz": ******,
 
-    "target": ******
+    "target_html": ******
 }
 
-history_url and appmsg_token are found using WeChat client and MITM proxy.
-__biz is the unique identifier associate with WeChat account.
-target is the aimed elements in html.
+article_history is the article history url of WeChat official account. Clicking "View Message History" on PC or Mac WeChat client, then look for a url start with "https://mp.weixin.qq.com/mp/getmasssendmsg?" and followed by a tons of parameters in your MITM proxy.
+
+appmsg_token is the token for getting things like views, likes, # of comments of articles (JSON). It can be found using MITM proxy as well, just clicking an article and look for a url start with "https://mp.weixin.qq.com/mp/getappmsgext?". This token will expire after centain period of time.
+
+__biz is the unique identifier associate with WeChat account. It can be find inside the article_history url but I am not sure it is always there.
+
+target_html is the html elements that we are looking for in articles. This is useful if one of the desired output is to check which articles have certain ads banner or image or other stuff. The JSON file can not have this one if it is not desired.
 
 """
 import time
@@ -31,10 +36,14 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 config = json.loads(open("wechat.json", mode="r").read())
 
-history_url = config["history_url"]
+article_history = config["article_history"]
 appmsg_token = config["appmsg_token"]
 biz = config["__biz"]
-target = config["target"]
+try:
+    target_html = config["target_html"]
+except:
+    target_html = None
+
 
 class History:
     def __init__(self):
@@ -43,10 +52,10 @@ class History:
             "Mozilla/5.0 (iPhone; CPU iPhone OS 13_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/7.0.14(0x17000e28) NetType/WIFI Language/en",
         }
         self.s = requests.Session()
-        self.s.get(history_url, headers=headers, verify=False)
-        self.uin = unquote(history_url.split("&")[1].split("=")[1])
-        self.key = unquote(history_url.split("&")[2].split("=")[1])
-        self.pass_ticket = unquote(history_url.split("&")[9].split("=")[1])
+        self.s.get(article_history, headers=headers, verify=False)
+        self.uin = unquote(article_history.split("&")[1].split("=")[1])
+        self.key = unquote(article_history.split("&")[2].split("=")[1])
+        self.pass_ticket = unquote(article_history.split("&")[9].split("=")[1])
 
     def get_articles(self, max, start=0):
         """get articles title and urls from WeChat official account history.
@@ -185,8 +194,9 @@ class Article:
             "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36 MicroMessenger/6.5.2.501 NetType/WIFI WindowsWechat QBCore/3.43.901.400 QQBrowser/9.0.2524.400"
         }
         html = self.session.get(self.url, headers=headers, verify=False).text
-        if target in html:
-            exist = 1
+        if target_html != None:
+            if target_html in html:
+                exist = 1
         print(f"banner: {exist}")
         return exist
 
