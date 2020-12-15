@@ -30,15 +30,12 @@ import json
 import html
 import csv
 import requests
-from urllib.parse import unquote
-import urllib3
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 config = json.loads(open("wechat.json", mode="r").read())
 
 article_history = config["article_history"]
 appmsg_token = config["appmsg_token"]
-biz = config["__biz"]
+# biz = config["__biz"]
 try:
     target_html = config["target_html"]
 except:
@@ -53,9 +50,13 @@ class History:
         }
         self.s = requests.Session()
         self.s.get(article_history, headers=headers, verify=False)
-        self.uin = unquote(article_history.split("&")[1].split("=")[1])
-        self.key = unquote(article_history.split("&")[2].split("=")[1])
-        self.pass_ticket = unquote(article_history.split("&")[9].split("=")[1])
+        self.biz = article_history.split("&")[0].split("=")[1] + "=="
+        self.uin = article_history.split("&")[1].split("=")[1]
+        self.key = article_history.split("&")[2].split("=")[1]
+        self.pass_ticket = article_history.split("&")[-1].split("=")[1]
+
+        global biz
+        biz = self.biz
 
     def get_articles(self, max, start=0):
         """get articles title and urls from WeChat official account history.
@@ -72,7 +73,7 @@ class History:
         while start <= max:
             params = {
                 'action': "getmsg",
-                '__biz': biz,
+                '__biz': self.biz,
                 'f': "json",
                 'offset': start,
                 'count': 10,
@@ -91,8 +92,8 @@ class History:
 
             for a in json.loads((response['general_msg_list']))['list']:
                 # print(a)
-                main_article = {} # unique article
-                multi_article = {} # repeated article(s)
+                main_article = {}  # unique article
+                multi_article = {}  # repeated article(s)
                 main_article['title'] = html.unescape(
                     a['app_msg_ext_info']['title'])
                 main_article['url'] = a['app_msg_ext_info']['content_url']
@@ -110,13 +111,14 @@ class History:
                 except:
                     pass
             start += 10
-        return article_list 
+        return article_list
+
 
 class Article:
     def __init__(self, url, session):
         self.url = url
         self.session = session
-    
+
     def get_info(self):
         """get read, like, comment for an article using API.
 
@@ -130,7 +132,7 @@ class Article:
         #_biz = self.url.split("&")[0].split("_biz=")[1]
 
         # API for read, like, comment, etc.
-        url = "http://mp.weixin.qq.com/mp/getappmsgext" 
+        url = "http://mp.weixin.qq.com/mp/getappmsgext"
 
         # add Cookie to avoid login requirement，User-Agent is better to be mobile device
         phoneCookie = "wxtokenkey=777; rewardsn=; wxuin=2529518319; devicetype=Windows10; version=62060619; lang=zh_CN; pass_ticket=4KzFV+kaUHM+atRt91i/shNERUQyQ0EOwFbc9/Oe4gv6RiV6/J293IIDnggg1QzC; wap_sid2=CO/FlbYJElxJc2NLcUFINkI4Y1hmbllPWWszdXRjMVl6Z3hrd2FKcTFFOERyWkJZUjVFd3cyS3VmZHBkWGRZVG50d0F3aFZ4NEFEVktZeDEwVHQyN1NrNG80NFZRdWNEQUFBfjC5uYLkBTgNQAE="
@@ -205,9 +207,11 @@ csvfile = open('wechat_article_banner.csv', 'a', newline='')
 header = ["title", "url", "date", "readnum", "likenum",
           'comment_count', "banner"]
 
+
 def write_table(data):
     writer = csv.DictWriter(csvfile, header)
     writer.writerow(data)
+
 
 if __name__ == '__main__':
     count = 1
@@ -215,7 +219,7 @@ if __name__ == '__main__':
     uin = history.uin
     key = history.key
     pass_ticket = history.pass_ticket
-    a_list = history.get_articles(200) # customize offset
+    a_list = history.get_articles(200)  # customize offset
     print(a_list)
     for a in a_list:
         print(f"article # {count}")
@@ -230,4 +234,3 @@ if __name__ == '__main__':
         count += 1
 
     csvfile.close()
-    
