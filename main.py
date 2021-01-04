@@ -30,11 +30,19 @@ import json
 import html
 import csv
 import requests
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 config = json.loads(open("wechat.json", mode="r").read())
 
 article_history = config["article_history"]
 appmsg_token = config["appmsg_token"]
+
+# setting
+# customize offset, default 0, 200
+start = 0
+max = 400
+
 
 try:
     target_html = config["target_html"]
@@ -219,7 +227,14 @@ if __name__ == '__main__':
     uin = history.uin
     key = history.key
     pass_ticket = history.pass_ticket
-    a_list = history.get_articles(start=0, max=200)  # customize offset
+    # prevent over max error
+    while True:
+        try:
+            a_list = history.get_articles(start=start, max=max)
+            break
+        except:
+            max -= 1
+            print(f"maxout at {max}")
     print(a_list)
     for a in a_list:
         print(f"article # {count}")
