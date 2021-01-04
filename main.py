@@ -35,7 +35,7 @@ config = json.loads(open("wechat.json", mode="r").read())
 
 article_history = config["article_history"]
 appmsg_token = config["appmsg_token"]
-# biz = config["__biz"]
+
 try:
     target_html = config["target_html"]
 except:
@@ -219,7 +219,7 @@ if __name__ == '__main__':
     uin = history.uin
     key = history.key
     pass_ticket = history.pass_ticket
-    a_list = history.get_articles(200)  # customize offset
+    a_list = history.get_articles(start=0, max=200)  # customize offset
     print(a_list)
     for a in a_list:
         print(f"article # {count}")
