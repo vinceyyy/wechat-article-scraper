@@ -6,7 +6,7 @@ Requires a file named "wechat.json" to store sensitive information.
 
 JSON file structure: 
 {
-    "article_history": ******,
+    "account_profile": ******,
 
     "appmsg_token": ******,
 
@@ -15,11 +15,11 @@ JSON file structure:
     "target_html": ******
 }
 
-article_history is the article history url of WeChat official account. Clicking "View Message History" on PC or Mac WeChat client, then look for a url start with "https://mp.weixin.qq.com/mp/getmasssendmsg?" and followed by a tons of parameters in your MITM proxy.
+account_profile is the article history url of WeChat official account. Clicking "View Message History" on PC or Mac WeChat client, then look for a url start with "https://mp.weixin.qq.com/mp/getmasssendmsg?" and followed by a tons of parameters in your MITM proxy.
 
 appmsg_token is the token for getting things like views, likes, # of comments of articles (JSON). It can be found using MITM proxy as well, just clicking an article and look for a url start with "https://mp.weixin.qq.com/mp/getappmsgext?". This token will expire after centain period of time.
 
-__biz is the unique identifier associate with WeChat account. It can be find inside the article_history url but I am not sure it is always there.
+__biz is the unique identifier associate with WeChat account. It can be find inside the account_profile url but I am not sure it is always there.
 
 target_html is the html elements that we are looking for in articles. This is useful if one of the desired output is to check which articles have certain ads banner or image or other stuff. The JSON file can not have this one if it is not desired.
 
@@ -35,13 +35,13 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 config = json.loads(open("wechat.json", mode="r").read())
 
-article_history = config["article_history"]
+account_profile = config["account_profile"]
 appmsg_token = config["appmsg_token"]
 
 # setting
 # customize offset, default 0, 200
-start = 0
-max = 400
+start = 89
+max = 200
 
 
 try:
@@ -57,11 +57,11 @@ class History:
             "Mozilla/5.0 (iPhone; CPU iPhone OS 13_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/7.0.14(0x17000e28) NetType/WIFI Language/en",
         }
         self.s = requests.Session()
-        self.s.get(article_history, headers=headers, verify=False)
-        self.biz = article_history.split("&")[0].split("=")[1] + "=="
-        self.uin = article_history.split("&")[1].split("=")[1]
-        self.key = article_history.split("&")[2].split("=")[1]
-        self.pass_ticket = article_history.split("&")[-1].split("=")[1]
+        self.s.get(account_profile, headers=headers, verify=False)
+        self.biz = account_profile.split("&")[0].split("=")[1] + "=="
+        self.uin = account_profile.split("&")[1].split("=")[1]
+        self.key = account_profile.split("&")[2].split("=")[1]
+        self.pass_ticket = account_profile.split("&")[-1].split("=")[1]
 
         global biz
         biz = self.biz
@@ -237,11 +237,17 @@ if __name__ == '__main__':
             print(f"maxout at {max}")
     print(a_list)
     for a in a_list:
+        print(a)
         print(f"article # {count}")
+        # prevent no title and url error
+        if a.get('title', None) == None:
+            print('NO TITLE')
+        if a.get('url', None) == None:
+            print('NO URL')
+            pass
         article = Article(a['url'], history.s)
         a['readnum'], a['likenum'], a['comment_count'] = article.get_info()
         a['banner'] = article.check_content()
-        print(a)
         print("=======================")
         write_table(a)
         if count % 10 == 0:
