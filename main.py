@@ -40,8 +40,8 @@ appmsg_token = config["appmsg_token"]
 
 # setting
 # customize offset, default 0, 200
-start = 89
-max = 200
+start = 0
+max = 400
 
 
 try:
@@ -244,7 +244,7 @@ if __name__ == '__main__':
             print('NO TITLE')
         if a.get('url', None) == None:
             print('NO URL')
-            pass
+            continue
         article = Article(a['url'], history.s)
         a['readnum'], a['likenum'], a['comment_count'] = article.get_info()
         a['banner'] = article.check_content()
