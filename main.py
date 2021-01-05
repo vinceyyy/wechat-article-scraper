@@ -10,8 +10,6 @@ JSON file structure:
 
     "appmsg_token": ******,
 
-    "__biz": ******,
-
     "target_html": ******
 }
 
