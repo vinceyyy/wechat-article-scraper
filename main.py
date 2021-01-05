@@ -240,10 +240,11 @@ if __name__ == '__main__':
         print(a)
         print(f"article # {count}")
         # prevent no title and url error
-        if a.get('title', None) == None:
+        if a.get('title') == '':
             print('NO TITLE')
-        if a.get('url', None) == None:
+        if a.get('url') == '':
             print('NO URL')
+            print("=======================")
             continue
         article = Article(a['url'], history.s)
         a['readnum'], a['likenum'], a['comment_count'] = article.get_info()
